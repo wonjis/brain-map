@@ -1,0 +1,29 @@
+{
+  "name": "brain-map-1",
+  "version": "1.0.0",
+  "description": "building map of the things that I am learning",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wonjis/brain-map.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wonjis/brain-map/issues"
+  },
+  "homepage": "https://github.com/wonjis/brain-map#readme",
+  "devDependencies": {
+    "@mendable/firecrawl-js": "^4.11.1",
+    "@types/node": "^25.0.9",
+    "octokit": "^5.0.5",
+    "typescript": "^5.9.3",
+    "vercel": "^50.4.5",
+    "zod": "^4.3.5"
+  }
+}

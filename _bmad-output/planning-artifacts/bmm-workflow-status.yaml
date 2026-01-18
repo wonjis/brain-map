@@ -1,0 +1,9 @@
+workflows:
+  create-architecture:
+    status: complete
+    path: _bmad-output/planning-artifacts/architecture.md
+    completedAt: '2026-01-18'
+  create-epics-and-stories:
+    status: complete
+    path: _bmad-output/planning-artifacts/epics.md
+    completedAt: '2026-01-18'
