@@ -54,7 +54,7 @@ def _summarize_url(url: str) -> str:
     payload = {
         "url": url,
         "onlyMainContent": True,
-        "formats": ["markdown"],
+        "formats": ["markdown", "json"],
         "jsonOptions": {
             "prompt": "Write a detailed summary in exactly 10 sentences.",
             "schema": {
