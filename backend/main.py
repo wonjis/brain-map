@@ -7,6 +7,7 @@ from typing import List, Optional
 
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl
 
 FIRECRAWL_BASE_URL = os.getenv("FIRECRAWL_BASE_URL", "https://api.firecrawl.dev")
@@ -118,3 +119,22 @@ async def ingest(request: IngestRequest) -> IngestResponse:
         handle.write(memo_content)
 
     return IngestResponse(memo_path=memo_path, summary=summary)
+
+
+@app.post("/ingest-github")
+async def ingest_github(request: IngestRequest) -> JSONResponse:
+    summary = _summarize_url(str(request.url))
+
+    title = request.title or request.source_title or "Untitled"
+    source_title = request.source_title or request.title or title
+    date_prefix = datetime.now().strftime("%m-%d-%Y")
+    filename = f"{date_prefix}-{_slugify(title)}.md"
+
+    memo_content = _build_memo(title, request.tags, source_title, str(request.url), summary)
+
+    return JSONResponse(
+        {
+            "filename": filename,
+            "content": memo_content,
+        }
+    )

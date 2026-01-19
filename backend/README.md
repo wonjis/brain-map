@@ -17,6 +17,9 @@ pip install -r requirements.txt
 ```bash
 export FIRECRAWL_API_KEY="your-api-key"
 export OBSIDIAN_VAULT_PATH="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/brain-map/Inbox"
+export GITHUB_TOKEN="your-github-token"
+export GITHUB_REPO="wonjis/inbox"
+export GITHUB_FOLDER="Inbox/"
 ```
 
 3. Run the API:
@@ -39,6 +42,17 @@ Example payload:
 
 Response includes the memo path and summary text.
 
+### GitHub-backed ingest (Vercel)
+
+When deployed on Vercel, the `/api/ingest` function writes the memo into GitHub instead of a local Obsidian vault.
+Set these environment variables in Vercel:
+
+- `GITHUB_TOKEN`
+- `GITHUB_REPO` (default: `wonjis/inbox`)
+- `GITHUB_FOLDER` (default: `Inbox/`)
+
+For local runs, keep using `http://localhost:8080/ingest` and `OBSIDIAN_VAULT_PATH`.
+
 ## iOS Shortcut (detailed)
 
 **Name**: Brain Map Capture
@@ -59,7 +73,7 @@ Response includes the memo path and summary text.
      - url: Selected URL
 
 4. **Get Contents of URL**
-   - URL: `http://<your-mac-or-server>:8080/ingest`
+   - URL: `https://<your-vercel-domain>/api/ingest`
    - Method: POST
    - Request Body: JSON
    - JSON: Dictionary from previous step
@@ -69,4 +83,4 @@ Response includes the memo path and summary text.
    - Input: Contents of URL
 
 6. **Show Result**
-   - Text: `Saved to: ${memo_path}`
+   - Text: `Saved to: ${path}`
