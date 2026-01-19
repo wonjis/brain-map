@@ -28,6 +28,12 @@ export GITHUB_FOLDER="Inbox/"
 uvicorn main:app --reload --port 8080
 ```
 
+4. Test the endpoint (optional):
+
+```bash
+API_URL=http://localhost:8080/ingest TEST_URL=https://example.com bash scripts/test_ingest.sh
+```
+
 ## Ingest endpoint
 
 `POST /ingest`
