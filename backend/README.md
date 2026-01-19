@@ -12,7 +12,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Set environment variables:
+2. Set environment variables (or copy from `.env.example`):
 
 ```bash
 export FIRECRAWL_API_KEY="your-api-key"
