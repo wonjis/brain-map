@@ -53,15 +53,23 @@ def _summarize_url(url: str) -> str:
 
     payload = {
         "url": url,
-        "summaryOptions": {
-            "format": "markdown",
-            "length": "long",
+        "onlyMainContent": True,
+        "formats": ["markdown"],
+        "jsonOptions": {
             "prompt": "Write a detailed summary in exactly 10 sentences.",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string"}
+                },
+                "required": ["summary"],
+                "additionalProperties": False,
+            },
         },
     }
 
     response = requests.post(
-        f"{FIRECRAWL_BASE_URL}/v1/summarize",
+        f"{FIRECRAWL_BASE_URL}/v1/scrape",
         headers={"Authorization": f"Bearer {FIRECRAWL_API_KEY}"},
         json=payload,
         timeout=60,
@@ -74,7 +82,7 @@ def _summarize_url(url: str) -> str:
         )
 
     data = response.json()
-    summary = data.get("summary") or data.get("data", {}).get("summary")
+    summary = data.get("data", {}).get("json", {}).get("summary")
     if not summary:
         raise HTTPException(status_code=502, detail="Firecrawl returned no summary")
 
