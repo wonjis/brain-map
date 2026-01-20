@@ -48,7 +48,7 @@ async def _create_github_file(path: str, content: str) -> None:
 
 @app.post("/ingest")
 async def ingest_github(request: GitHubIngestRequest) -> Dict[str, Any]:
-    summary, page_title = _summarize_url(str(request.url))
+    summary, _, page_title = _summarize_url(str(request.url))
 
     title = request.title or request.source_title or page_title
     if not title:
