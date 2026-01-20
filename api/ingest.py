@@ -48,10 +48,10 @@ async def _create_github_file(path: str, content: str) -> None:
 
 @app.post("/ingest")
 async def ingest_github(request: GitHubIngestRequest) -> Dict[str, Any]:
-    summary = _summarize_url(str(request.url))
+    summary, page_title = _summarize_url(str(request.url))
 
-    title = request.title or request.source_title or "Untitled"
-    source_title = request.source_title or request.title or title
+    title = request.title or request.source_title or page_title or "Untitled"
+    source_title = request.source_title or request.title or page_title or title
     date_prefix = datetime.now().strftime("%m-%d-%Y")
     filename = f"{date_prefix}-{_slugify(title)}.md"
 

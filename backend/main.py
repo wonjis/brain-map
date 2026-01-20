@@ -44,7 +44,7 @@ def _format_tags(tags: Optional[List[str]]) -> str:
     return " ".join(f"#{tag}" for tag in normalized)
 
 
-def _summarize_url(url: str) -> str:
+def _summarize_url(url: str) -> tuple[str, Optional[str]]:
     if not FIRECRAWL_API_KEY:
         raise HTTPException(status_code=500, detail="FIRECRAWL_API_KEY is not set")
 
@@ -79,11 +79,13 @@ def _summarize_url(url: str) -> str:
         )
 
     data = response.json()
-    summary = data.get("data", {}).get("json", {}).get("summary")
+    payload = data.get("data", {})
+    summary = payload.get("json", {}).get("summary")
+    title = payload.get("metadata", {}).get("title")
     if not summary:
         raise HTTPException(status_code=502, detail="Firecrawl returned no summary")
 
-    return summary.strip()
+    return summary.strip(), title
 
 
 def _build_memo(title: str, tags: Optional[List[str]], source_title: str, url: str, summary: str) -> str:
@@ -133,9 +135,9 @@ async def _write_github_memo(
 
 @app.post("/ingest")
 async def ingest(request: IngestRequest) -> JSONResponse:
-    summary = _summarize_url(str(request.url))
+    summary, page_title = _summarize_url(str(request.url))
 
-    title = request.title or request.source_title or "Untitled"
+    title = request.title or request.source_title or page_title or "Untitled"
     source_title = request.source_title or request.title or title
     date_prefix = datetime.now().strftime("%m-%d-%Y")
     filename = f"{date_prefix}-{_slugify(title)}.md"
