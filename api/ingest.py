@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import httpx
-from backend.main import IngestRequest, _build_memo, _slugify, _summarize_url
+from backend.main import IngestRequest, _build_memo, _slug_from_url, _slugify, _summarize_url
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, HttpUrl
 
@@ -50,7 +50,9 @@ async def _create_github_file(path: str, content: str) -> None:
 async def ingest_github(request: GitHubIngestRequest) -> Dict[str, Any]:
     summary, page_title = _summarize_url(str(request.url))
 
-    title = request.title or request.source_title or page_title or "Untitled"
+    title = request.title or request.source_title or page_title
+    if not title:
+        title = _slug_from_url(str(request.url))
     source_title = request.source_title or request.title or page_title or title
     date_prefix = datetime.now().strftime("%m-%d-%Y")
     filename = f"{date_prefix}-{_slugify(title)}.md"

@@ -5,6 +5,7 @@ import os
 import re
 from datetime import datetime
 from typing import List, Optional
+from urllib.parse import unquote, urlparse
 
 import httpx
 import requests
@@ -35,6 +36,16 @@ def _slugify(value: str) -> str:
     value = re.sub(r"\s+", "-", value)
     value = re.sub(r"-+", "-", value)
     return value or "untitled"
+
+
+def _slug_from_url(url: str) -> str:
+    parsed = urlparse(url)
+    path = unquote(parsed.path or "").strip("/")
+    if path:
+        return _slugify(path.split("/")[-1])
+    if parsed.netloc:
+        return _slugify(parsed.netloc)
+    return "untitled"
 
 
 def _format_tags(tags: Optional[List[str]]) -> str:
@@ -137,8 +148,10 @@ async def _write_github_memo(
 async def ingest(request: IngestRequest) -> JSONResponse:
     summary, page_title = _summarize_url(str(request.url))
 
-    title = request.title or request.source_title or page_title or "Untitled"
-    source_title = request.source_title or request.title or title
+    title = request.title or request.source_title or page_title
+    if not title:
+        title = _slug_from_url(str(request.url))
+    source_title = request.source_title or request.title or page_title or title
     date_prefix = datetime.now().strftime("%m-%d-%Y")
     filename = f"{date_prefix}-{_slugify(title)}.md"
 
