@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: brain-map-ingest
+    env: python
+    buildCommand: "python -m pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port 10000"
+    plan: starter
+    envVars:
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: OBSIDIAN_VAULT_PATH
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: "wonjis/inbox"
+      - key: GITHUB_FOLDER
+        value: "Inbox/"

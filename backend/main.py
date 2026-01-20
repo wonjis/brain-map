@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import base64
 import os
 import re
 from datetime import datetime
 from typing import List, Optional
 
+import httpx
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -25,11 +27,6 @@ class IngestRequest(BaseModel):
     title: Optional[str] = None
     tags: Optional[List[str]] = None
     source_title: Optional[str] = None
-
-
-class IngestResponse(BaseModel):
-    memo_path: str
-    summary: str
 
 
 def _slugify(value: str) -> str:
@@ -109,40 +106,54 @@ def _build_memo(title: str, tags: Optional[List[str]], source_title: str, url: s
     return "\n".join(lines)
 
 
-@app.post("/ingest", response_model=IngestResponse)
-async def ingest(request: IngestRequest) -> IngestResponse:
+async def _write_github_memo(
+    token: str,
+    repo: str,
+    folder: str,
+    filename: str,
+    content: str,
+) -> None:
+    api_url = f"https://api.github.com/repos/{repo}/contents/{folder}{filename}"
+    payload = {
+        "message": f"Add memo {filename}",
+        "content": base64.b64encode(content.encode("utf-8")).decode("utf-8"),
+    }
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.put(api_url, json=payload, headers=headers)
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"GitHub error: {response.text}")
+
+
+@app.post("/ingest")
+async def ingest(request: IngestRequest) -> JSONResponse:
     summary = _summarize_url(str(request.url))
 
     title = request.title or request.source_title or "Untitled"
     source_title = request.source_title or request.title or title
     date_prefix = datetime.now().strftime("%m-%d-%Y")
     filename = f"{date_prefix}-{_slugify(title)}.md"
+
+    memo_content = _build_memo(title, request.tags, source_title, str(request.url), summary)
+
+    github_token = os.getenv("GITHUB_TOKEN")
+    github_repo = os.getenv("GITHUB_REPO", "wonjis/inbox")
+    github_folder = os.getenv("GITHUB_FOLDER", "Inbox/")
+
+    if github_token:
+        await _write_github_memo(github_token, github_repo, github_folder, filename, memo_content)
+        return JSONResponse({"path": f"{github_folder}{filename}", "filename": filename})
 
     os.makedirs(OBSIDIAN_VAULT_PATH, exist_ok=True)
     memo_path = os.path.join(OBSIDIAN_VAULT_PATH, filename)
 
-    memo_content = _build_memo(title, request.tags, source_title, str(request.url), summary)
-
     with open(memo_path, "w", encoding="utf-8") as handle:
         handle.write(memo_content)
 
-    return IngestResponse(memo_path=memo_path, summary=summary)
-
-
-@app.post("/ingest-github")
-async def ingest_github(request: IngestRequest) -> JSONResponse:
-    summary = _summarize_url(str(request.url))
-
-    title = request.title or request.source_title or "Untitled"
-    source_title = request.source_title or request.title or title
-    date_prefix = datetime.now().strftime("%m-%d-%Y")
-    filename = f"{date_prefix}-{_slugify(title)}.md"
-
-    memo_content = _build_memo(title, request.tags, source_title, str(request.url), summary)
-
-    return JSONResponse(
-        {
-            "filename": filename,
-            "content": memo_content,
-        }
-    )
+    return JSONResponse({"memo_path": memo_path, "filename": filename})
