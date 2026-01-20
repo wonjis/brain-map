@@ -55,7 +55,7 @@ def _format_tags(tags: Optional[List[str]]) -> str:
     return " ".join(f"#{tag}" for tag in normalized)
 
 
-def _summarize_url(url: str) -> tuple[str, Optional[str]]:
+def _summarize_url(url: str) -> tuple[str, List[str], Optional[str]]:
     if not FIRECRAWL_API_KEY:
         raise HTTPException(status_code=500, detail="FIRECRAWL_API_KEY is not set")
 
@@ -64,13 +64,20 @@ def _summarize_url(url: str) -> tuple[str, Optional[str]]:
         "onlyMainContent": True,
         "formats": ["markdown", "json"],
         "jsonOptions": {
-            "prompt": "Write a detailed summary in exactly 10 sentences.",
+            "prompt": "Provide 5 concise bullet points summarizing the content and list 3-5 interesting quotes or lines that are useful for reflection, research, or guidance. Keep bullets concise and quotes verbatim.",
             "schema": {
                 "type": "object",
                 "properties": {
-                    "summary": {"type": "string"}
+                    "bullets": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "quotes": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
                 },
-                "required": ["summary"],
+                "required": ["bullets", "quotes"],
                 "additionalProperties": False,
             },
         },
@@ -91,12 +98,28 @@ def _summarize_url(url: str) -> tuple[str, Optional[str]]:
 
     data = response.json()
     payload = data.get("data", {})
-    summary = payload.get("json", {}).get("summary")
+    json_payload = payload.get("json", {})
+    bullets = json_payload.get("bullets")
+    quotes = json_payload.get("quotes")
     title = payload.get("metadata", {}).get("title")
-    if not summary:
+
+    if not bullets or not quotes:
         raise HTTPException(status_code=502, detail="Firecrawl returned no summary")
 
-    return summary.strip(), title
+    bullet_lines = [f"- {bullet.strip()}" for bullet in bullets if str(bullet).strip()]
+    quote_lines = [f"> {quote.strip()}" for quote in quotes if str(quote).strip()]
+
+    summary_sections = [
+        "## Summary Bullets",
+        *bullet_lines,
+        "",
+        "## Notable Quotes",
+        *quote_lines,
+    ]
+
+    summary_text = "\n".join(summary_sections).strip()
+
+    return summary_text, bullet_lines, title
 
 
 def _build_memo(title: str, tags: Optional[List[str]], source_title: str, url: str, summary: str) -> str:
@@ -111,7 +134,6 @@ def _build_memo(title: str, tags: Optional[List[str]], source_title: str, url: s
         f"Source Title: {source_title}",
         f"URL: {url}",
         "",
-        "## Detail Summary",
         summary,
         "",
     ]
@@ -146,7 +168,7 @@ async def _write_github_memo(
 
 @app.post("/ingest")
 async def ingest(request: IngestRequest) -> JSONResponse:
-    summary, page_title = _summarize_url(str(request.url))
+    summary, _, page_title = _summarize_url(str(request.url))
 
     title = request.title or request.source_title or page_title
     if not title:
