@@ -1,6 +1,6 @@
 # Brain Map Ingest Backend
 
-A small FastAPI service that accepts a URL, calls Firecrawl for a 10-sentence summary, and writes a memo into your Obsidian vault.
+A small FastAPI service that accepts a URL, calls Firecrawl for a 10-sentence summary, and writes a memo into your Obsidian vault or commits into GitHub when configured.
 
 ## Setup
 
@@ -48,10 +48,10 @@ Example payload:
 
 Response includes the memo path and summary text.
 
-### GitHub-backed ingest (Vercel)
+### GitHub-backed ingest (Render)
 
-When deployed on Vercel, the `/api/ingest` function writes the memo into GitHub instead of a local Obsidian vault.
-Set these environment variables in Vercel:
+When deployed on Render, the `POST /ingest` endpoint writes the memo into GitHub when `GITHUB_TOKEN` is set; otherwise it writes to the local Obsidian vault.
+Set these environment variables in Render if you want GitHub commits:
 
 - `GITHUB_TOKEN`
 - `GITHUB_REPO` (default: `wonjis/inbox`)
@@ -79,7 +79,7 @@ For local runs, keep using `http://localhost:8080/ingest` and `OBSIDIAN_VAULT_PA
      - url: Selected URL
 
 4. **Get Contents of URL**
-   - URL: `https://<your-vercel-domain>/api/ingest`
+   - URL: `https://<your-render-service>.onrender.com/ingest`
    - Method: POST
    - Request Body: JSON
    - JSON: Dictionary from previous step
